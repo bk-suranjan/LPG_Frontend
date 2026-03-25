@@ -9,40 +9,44 @@ import {
   Platform,
   ScrollView,
   StatusBar,
+  Alert,
 } from 'react-native';
 import React, { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import api from '../../../utils/api';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../../utils/theme';
+import api from '../../utils/api';
+import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../utils/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
-const Book = () => {
+const CreateCylinder = () => {
   const [cylinderType, setCylinderType] = useState('');
-  const [quantity, setQuantity] = useState('1');
-  const [address, setAddress] = useState('');
+  const [stock, setStock] = useState('');
+  const [price, setPrice] = useState('');
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
   // Focus states
-  const [typeFocused, setTypeFocused] = useState(false);
-  const [qtyFocused, setQtyFocused] = useState(false);
-  const [addrFocused, setAddrFocused] = useState(false);
+  const [stockFocused, setStockFocused] = useState(false);
+  const [priceFocused, setPriceFocused] = useState(false);
+
+  const router = useRouter();
 
   const cylinderOptions = ['5kg', '10kg', '15kg'];
 
-  const handleBooking = async () => {
-    // Validate
-    if (!cylinderType || !cylinderType.trim()) {
+  const handleCreateCylinder = async () => {
+    // Validate inputs
+    if (!cylinderType) {
       setError('Please select a cylinder type');
       return;
     }
-    if (!quantity || Number(quantity) < 1) {
-      setError('Quantity must be at least 1');
+    if (!stock || isNaN(Number(stock))) {
+      setError('Please enter a valid stock quantity');
       return;
     }
-    if (!address || !address.trim()) {
-      setError('Please enter your delivery address');
+    if (!price || isNaN(Number(price))) {
+      setError('Please enter a valid price');
       return;
     }
 
@@ -58,11 +62,11 @@ const Book = () => {
       }
 
       const res = await api.post(
-        '/booking/book',
+        '/cylinder',
         {
-          cylinderType: cylinderType.trim(),
-          quantity: Number(quantity),
-          address: address.trim(),
+          type: cylinderType,
+          stock: Number(stock),
+          price: Number(price),
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -75,14 +79,21 @@ const Book = () => {
 
       setSuccess(true);
       setCylinderType('');
-      setQuantity('1');
-      setAddress('');
+      setStock('');
+      setPrice('');
+      
+      Alert.alert(
+        "Success", 
+        "Cylinder created successfully!",
+        [{ text: "OK", onPress: () => router.push('/superadmin') }]
+      );
+      
     } catch (err) {
       const message =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.message ||
-        'Booking failed. Please try again.';
+        'Failed to create cylinder. Please try again.';
       setError(message);
     } finally {
       setLoading(false);
@@ -104,11 +115,11 @@ const Book = () => {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerIcon}>
-            <Ionicons name="cart" size={28} color={COLORS.accent} />
+            <Ionicons name="add-circle" size={32} color={COLORS.accent} />
           </View>
-          <Text style={styles.headerTitle}>Book Cylinder</Text>
+          <Text style={styles.headerTitle}>Create Cylinder</Text>
           <Text style={styles.headerSubtitle}>
-            Fill in the details to place your order
+            Add a new cylinder type to the inventory
           </Text>
         </View>
 
@@ -121,15 +132,15 @@ const Book = () => {
               color={COLORS.success}
             />
             <View style={{ flex: 1 }}>
-              <Text style={styles.successTitle}>Booking Successful! ✅</Text>
+              <Text style={styles.successTitle}>Created Successfully! ✅</Text>
               <Text style={styles.successText}>
-                Your order has been placed. You will be notified when it is confirmed.
+                The new cylinder has been added to your inventory.
               </Text>
             </View>
           </View>
         ) : null}
 
-        {/* Error */}
+        {/* Error Message */}
         {error ? (
           <View style={styles.errorContainer}>
             <Ionicons name="alert-circle" size={18} color={COLORS.error} />
@@ -176,89 +187,70 @@ const Book = () => {
             </View>
           </View>
 
-          {/* Quantity */}
+          {/* Initial Stock */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Quantity</Text>
-            <View style={styles.quantityRow}>
-              <TouchableOpacity
-                style={styles.qtyButton}
-                onPress={() => {
-                  const val = Math.max(1, Number(quantity || 1) - 1);
-                  setQuantity(String(val));
-                }}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="remove" size={20} color={COLORS.textPrimary} />
-              </TouchableOpacity>
-              <View
-                style={[
-                  styles.qtyInputWrapper,
-                  qtyFocused && styles.inputWrapperFocused,
-                ]}
-              >
-                <TextInput
-                  value={quantity}
-                  onChangeText={(text) => {
-                    setQuantity(text.replace(/[^0-9]/g, ''));
-                    if (error) setError(null);
-                  }}
-                  keyboardType="numeric"
-                  style={styles.qtyInput}
-                  textAlign="center"
-                  onFocus={() => setQtyFocused(true)}
-                  onBlur={() => setQtyFocused(false)}
-                />
-              </View>
-              <TouchableOpacity
-                style={styles.qtyButton}
-                onPress={() => {
-                  const val = Number(quantity || 0) + 1;
-                  setQuantity(String(val));
-                }}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="add" size={20} color={COLORS.textPrimary} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Address */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Delivery Address</Text>
+            <Text style={styles.inputLabel}>Initial Stock</Text>
             <View
               style={[
                 styles.inputWrapper,
-                addrFocused && styles.inputWrapperFocused,
-                { height: 100, alignItems: 'flex-start', paddingTop: SPACING.md },
+                stockFocused && styles.inputWrapperFocused,
               ]}
             >
               <Ionicons
-                name="location-outline"
+                name="layers-outline"
                 size={20}
-                color={addrFocused ? COLORS.accent : COLORS.textMuted}
-                style={{ marginTop: 2 }}
+                color={stockFocused ? COLORS.accent : COLORS.textMuted}
               />
               <TextInput
-                value={address}
+                value={stock}
                 onChangeText={(text) => {
-                  setAddress(text);
+                  setStock(text.replace(/[^0-9]/g, ''));
                   if (error) setError(null);
                 }}
-                placeholder="Enter your delivery address"
+                placeholder="Enter stock quantity"
                 placeholderTextColor={COLORS.textMuted}
-                style={[styles.input, { textAlignVertical: 'top' }]}
-                multiline
-                numberOfLines={3}
-                onFocus={() => setAddrFocused(true)}
-                onBlur={() => setAddrFocused(false)}
+                style={styles.input}
+                keyboardType="numeric"
+                onFocus={() => setStockFocused(true)}
+                onBlur={() => setStockFocused(false)}
               />
             </View>
           </View>
 
-          {/* Book Button */}
+          {/* Price */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Price (Rs.)</Text>
+            <View
+              style={[
+                styles.inputWrapper,
+                priceFocused && styles.inputWrapperFocused,
+              ]}
+            >
+              <Ionicons
+                name="cash-outline"
+                size={20}
+                color={priceFocused ? COLORS.accent : COLORS.textMuted}
+              />
+              <TextInput
+                value={price}
+                onChangeText={(text) => {
+                  setPrice(text.replace(/[^0-9]/g, ''));
+                  if (error) setError(null);
+                }}
+                placeholder="Enter price per cylinder"
+                placeholderTextColor={COLORS.textMuted}
+                style={styles.input}
+                keyboardType="numeric"
+                onFocus={() => setPriceFocused(true)}
+                onBlur={() => setPriceFocused(false)}
+              />
+            </View>
+          </View>
+
+          {/* Create Button */}
           <TouchableOpacity
-            style={[styles.bookButton, loading && styles.bookButtonDisabled]}
-            onPress={handleBooking}
+            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+            onPress={handleCreateCylinder}
             disabled={loading}
             activeOpacity={0.8}
           >
@@ -266,8 +258,8 @@ const Book = () => {
               <ActivityIndicator color={COLORS.textPrimary} size="small" />
             ) : (
               <>
-                <Ionicons name="checkmark-circle" size={22} color={COLORS.textPrimary} />
-                <Text style={styles.bookButtonText}>Place Order</Text>
+                <Ionicons name="add-circle-outline" size={22} color={COLORS.textPrimary} />
+                <Text style={styles.submitButtonText}>Create Cylinder</Text>
               </>
             )}
           </TouchableOpacity>
@@ -277,7 +269,7 @@ const Book = () => {
   );
 };
 
-export default Book;
+export default CreateCylinder;
 
 const styles = StyleSheet.create({
   container: {
@@ -301,6 +293,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.lg,
+    ...SHADOWS.glow,
   },
   headerTitle: {
     fontSize: FONTS.sizes.xxl,
@@ -394,35 +387,6 @@ const styles = StyleSheet.create({
   chipTextSelected: {
     color: COLORS.textPrimary,
   },
-  quantityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.md,
-  },
-  qtyButton: {
-    width: 44,
-    height: 44,
-    borderRadius: RADIUS.md,
-    backgroundColor: COLORS.primaryLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.surfaceBorder,
-  },
-  qtyInputWrapper: {
-    flex: 1,
-    height: 44,
-    borderRadius: RADIUS.md,
-    borderWidth: 1.5,
-    borderColor: COLORS.inputBorder,
-    backgroundColor: COLORS.inputBg,
-    justifyContent: 'center',
-  },
-  qtyInput: {
-    color: COLORS.textPrimary,
-    fontSize: FONTS.sizes.lg,
-    fontWeight: FONTS.weights.bold,
-  },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -443,7 +407,7 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     fontSize: FONTS.sizes.md,
   },
-  bookButton: {
+  submitButton: {
     backgroundColor: COLORS.accent,
     borderRadius: RADIUS.md,
     height: 52,
@@ -451,12 +415,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: SPACING.sm,
+    marginTop: SPACING.sm,
     ...SHADOWS.glow,
   },
-  bookButtonDisabled: {
+  submitButtonDisabled: {
     opacity: 0.7,
   },
-  bookButtonText: {
+  submitButtonText: {
     color: COLORS.textPrimary,
     fontSize: FONTS.sizes.lg,
     fontWeight: FONTS.weights.bold,
