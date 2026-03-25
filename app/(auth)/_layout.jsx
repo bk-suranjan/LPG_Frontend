@@ -1,16 +1,20 @@
-import { StyleSheet, Text, View } from 'react-native'
-import React from 'react'
-import { Stack } from 'expo-router'
+import React from 'react';
+import { Stack } from 'expo-router';
+import { COLORS } from '../../utils/theme';
 
-const _layout = () => {
+const AuthLayout = () => {
   return (
-    <Stack>
-        <Stack.Screen name='Login'/>
-        <Stack.Screen name='Register'/>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: COLORS.primaryDark },
+        animation: 'slide_from_right',
+      }}
+    >
+      <Stack.Screen name="Login" />
+      <Stack.Screen name="Register" />
     </Stack>
-  )
-}
+  );
+};
 
-export default _layout
-
-const styles = StyleSheet.create({})
+export default AuthLayout;
