@@ -206,7 +206,7 @@ const AdminDetails = () => {
         <InfoRow
           icon="cube-outline"
           label="Cylinder Type"
-          value={booking.cylinderType || '—'}
+          value={typeof booking.cylinderType === 'object' ? booking.cylinderType?.type : booking.cylinderType || '—'}
         />
         <View style={styles.divider} />
 

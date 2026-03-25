@@ -92,7 +92,7 @@ const Request = () => {
             </View>
             <View>
               <Text style={styles.cardType}>
-                {item.cylinderType || 'Unknown'}
+                {typeof item.cylinderType === 'object' ? item.cylinderType?.type : item.cylinderType || 'Unknown'}
               </Text>
               <Text style={styles.cardQty}>
                 Qty: {item.quantity != null ? item.quantity : '—'}
